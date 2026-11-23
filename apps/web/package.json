@@ -1,0 +1,41 @@
+{
+  "name": "@internlink/web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "prisma generate && next build",
+    "vercel-build": "prisma generate && node scripts/migrate-if-production.mjs && next build",
+    "start": "next start",
+    "typecheck": "prisma generate && tsc --noEmit",
+    "postinstall": "prisma generate",
+    "db:migrate:dev": "prisma migrate dev",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@internlink/shared": "*",
+    "@prisma/client": "^6.0.0",
+    "@react-three/fiber": "^9.0.0",
+    "@upstash/ratelimit": "^2.0.0",
+    "@upstash/redis": "^1.34.0",
+    "@vercel/blob": "^2.0.0",
+    "@vis.gl/react-google-maps": "^1.5.0",
+    "bcryptjs": "^3.0.0",
+    "jose": "^5.9.0",
+    "next": "^15.5.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "three": "^0.180.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@types/three": "^0.180.0",
+    "prisma": "^6.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}

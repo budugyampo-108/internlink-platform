@@ -1,0 +1,275 @@
+// InternLink data model.
+// NOTE: the evaluation immutability triggers, CHECK constraints and append-only
+// audit log live in prisma/migrations/0002_integrity_locks/migration.sql
+// (Prisma's schema language cannot express triggers).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  STUDENT
+  COMPANY
+}
+
+enum VacancyStatus {
+  OPEN
+  CLOSED
+}
+
+enum ApplicationStatus {
+  SUBMITTED
+  REVIEWING
+  SHORTLISTED
+  ACCEPTED
+  REJECTED
+  WITHDRAWN
+  COMPLETED
+}
+
+enum EvaluationStatus {
+  REQUESTED // student initiated; HR has not submitted yet (still writable by the permitted party)
+  SUBMITTED // HR/supervisor submitted — IMMUTABLE from here on
+}
+
+enum DocumentKind {
+  INTRO_LETTER
+  CV
+  STUDENT_ID
+  EVAL_FORM
+  EVAL_RESPONSE
+  COMPANY_PHOTO
+}
+
+/* ───────────── Identity ───────────── */
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  role         Role
+  fullName     String
+  isActive     Boolean   @default(true)
+  failedLogins Int       @default(0)
+  lockedUntil  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  student       StudentProfile?
+  companyMember CompanyMember?
+  refreshTokens RefreshToken[]
+  documents     Document[]
+  applications  Application[]   @relation("StudentApplications")
+  messages      Message[]
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique // SHA-256 of the opaque token; raw token is never stored
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model StudentProfile {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  institution   String
+  program       String
+  level         Int
+  bio           String   @default("")
+  skills        String[]
+  portfolioUrl  String?
+  phone         String?
+  locationLabel String?
+  homeLat       Float?
+  homeLng       Float?
+  vacationLat   Float?
+  vacationLng   Float?
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+/* ───────────── Companies ───────────── */
+
+model Company {
+  id             String   @id @default(cuid())
+  name           String
+  overview       String   @default("")
+  industry       String
+  culture        String   @default("")
+  address        String   @default("")
+  digitalAddress String   @default("")
+  phone          String   @default("")
+  lat            Float?
+  lng            Float?
+  linkedin       String?
+  twitter        String?
+  instagram      String?
+  facebook       String?
+  website        String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  members     CompanyMember[]
+  photos      CompanyPhoto[]
+  departments Department[]
+  vacancies   Vacancy[]
+}
+
+model CompanyMember {
+  id        String  @id @default(cuid())
+  userId    String  @unique
+  companyId String
+  jobTitle  String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+}
+
+model CompanyPhoto {
+  id         String  @id @default(cuid())
+  companyId  String
+  documentId String  @unique
+  url        String
+  company    Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+}
+
+model Department {
+  id             String   @id @default(cuid())
+  companyId      String
+  name           String
+  description    String   @default("")
+  totalSlots     Int // exact number of intern/attachment slots this department offers
+  requiredSkills String[]
+  company        Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  vacancies      Vacancy[]
+
+  @@unique([companyId, name])
+}
+
+model Vacancy {
+  id                    String        @id @default(cuid())
+  companyId             String
+  departmentId          String
+  title                 String
+  description           String
+  slots                 Int
+  slotsFilled           Int           @default(0)
+  requiredSkills        String[]
+  applicantRequirements Json // ApplicantRequirements (see @internlink/shared)
+  availableFrom         DateTime
+  availableTo           DateTime
+  status                VacancyStatus @default(OPEN)
+  createdAt             DateTime      @default(now())
+
+  company      Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  department   Department    @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  applications Application[]
+
+  @@index([status, companyId])
+}
+
+/* ───────────── Files ───────────── */
+
+model Document {
+  id        String       @id @default(cuid())
+  ownerId   String
+  kind      DocumentKind
+  url       String
+  filename  String
+  mime      String
+  size      Int
+  createdAt DateTime     @default(now())
+  owner     User         @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+
+  @@index([ownerId, kind])
+}
+
+/* ───────────── Applications & chat ───────────── */
+
+model Application {
+  id               String            @id @default(cuid())
+  vacancyId        String
+  studentId        String // User.id of the student
+  status           ApplicationStatus @default(SUBMITTED)
+  coverNote        String?
+  portfolioUrl     String?
+  availableFrom    DateTime?
+  availableTo      DateTime?
+  introLetterDocId String
+  cvDocId          String?
+  studentIdDocId   String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  vacancy    Vacancy     @relation(fields: [vacancyId], references: [id], onDelete: Restrict)
+  student    User        @relation("StudentApplications", fields: [studentId], references: [id], onDelete: Restrict)
+  messages   Message[]
+  evaluation Evaluation?
+
+  @@unique([vacancyId, studentId])
+  @@index([studentId])
+}
+
+model Message {
+  id            String    @id @default(cuid())
+  applicationId String
+  senderId      String
+  body          String
+  createdAt     DateTime  @default(now())
+  deliveredAt   DateTime?
+  readAt        DateTime?
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  sender        User        @relation(fields: [senderId], references: [id], onDelete: Restrict)
+
+  @@index([applicationId, createdAt])
+}
+
+/* ───────────── Locked post-attachment evaluation ───────────── */
+
+model Evaluation {
+  id            String           @id @default(cuid())
+  applicationId String           @unique
+  status        EvaluationStatus @default(REQUESTED)
+  requestedById String // the student who initiated
+  requestedAt   DateTime         @default(now())
+  formDocId     String // form the student uploaded for HR to open
+  // ── Everything below is written ONCE by HR/supervisor, then locked ──
+  scores        Json?
+  remarks       String?
+  recommend     Boolean?
+  responseDocId String?
+  submittedById String?
+  submittedAt   DateTime?
+  contentHash   String? // SHA-256 over canonical payload → tamper evidence
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Restrict)
+}
+
+/* ───────────── Audit (append-only; enforced by trigger) ───────────── */
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String?
+  action    String
+  entity    String
+  entityId  String
+  meta      Json?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@index([actorId, createdAt])
+}

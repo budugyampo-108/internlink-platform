@@ -1,0 +1,16 @@
+{
+  "name": "internlink",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Student-to-Industry Internship & Attachment Platform (web + API + mobile)",
+  "workspaces": ["packages/*", "apps/web"],
+  "scripts": {
+    "dev": "npm run dev -w @internlink/web",
+    "build": "npm run build -w @internlink/web",
+    "typecheck": "npm run typecheck -w @internlink/shared && npm run typecheck -w @internlink/web",
+    "db:migrate:dev": "npm run db:migrate:dev -w @internlink/web",
+    "db:migrate:deploy": "npm run db:migrate:deploy -w @internlink/web",
+    "db:seed": "npm run db:seed -w @internlink/web"
+  },
+  "engines": { "node": ">=20" }
+}
