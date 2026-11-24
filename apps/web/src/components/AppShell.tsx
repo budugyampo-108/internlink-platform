@@ -7,7 +7,7 @@ export function AppShell({ role, children }: { role: 'STUDENT' | 'COMPANY'; chil
   const path = usePathname();
   const links =
     role === 'STUDENT'
-      ? [{ href: '/student', label: 'Discover nearby' }, { href: '/student/applications', label: 'My applications' }]
+      ? [{ href: '/student', label: 'Find Industries Near Me' }, { href: '/student/applications', label: 'My applications' }]
       : [
           { href: '/company', label: 'Applications' },
           { href: '/company/vacancies', label: 'Departments & Vacancies' },

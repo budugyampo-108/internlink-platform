@@ -111,9 +111,10 @@ model Company {
   address        String   @default("")
   digitalAddress String   @default("")
   phone          String   @default("")
-  lat            Float?
-  lng            Float?
-  linkedin       String?
+  lat                Float?
+  lng                Float?
+  verificationStatus String   @default("VERIFIED")
+  linkedin           String?
   twitter        String?
   instagram      String?
   facebook       String?

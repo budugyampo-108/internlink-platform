@@ -57,6 +57,7 @@ export const GET = route(async (req) => {
     JOIN "Company" c ON c.id = v."companyId"
     JOIN "Department" d ON d.id = v."departmentId"
     WHERE v.status = 'OPEN' AND v."slotsFilled" < v.slots AND c.lat IS NOT NULL AND c.lng IS NOT NULL
+      AND (c."verificationStatus" = 'VERIFIED' OR c."verificationStatus" IS NULL)
     ${filters.length ? Prisma.join(filters, ' ') : Prisma.empty}
     ORDER BY ${hasPoint ? Prisma.sql`"distanceKm" ASC` : Prisma.sql`v."createdAt" DESC`}
     LIMIT ${p.limit}

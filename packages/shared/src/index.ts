@@ -154,6 +154,7 @@ export const companyProfileSchema = z
       .regex(/^\+?[0-9 ()-]{7,20}$/, 'Enter a valid phone number'),
     lat: latField,
     lng: lngField,
+    verificationStatus: z.string().optional(),
     linkedin: optionalUrl,
     twitter: optionalUrl,
     instagram: optionalUrl,
