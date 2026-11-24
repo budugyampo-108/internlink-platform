@@ -8,7 +8,11 @@ export function AppShell({ role, children }: { role: 'STUDENT' | 'COMPANY'; chil
   const links =
     role === 'STUDENT'
       ? [{ href: '/student', label: 'Discover nearby' }, { href: '/student/applications', label: 'My applications' }]
-      : [{ href: '/company', label: 'Applications' }];
+      : [
+          { href: '/company', label: 'Applications' },
+          { href: '/company/vacancies', label: 'Departments & Vacancies' },
+          { href: '/company/profile', label: 'Company Profile' },
+        ];
 
   async function logout() {
     await api('/api/auth/logout', { method: 'POST' }).catch(() => undefined);

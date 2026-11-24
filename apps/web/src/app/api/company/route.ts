@@ -9,7 +9,14 @@ export const GET = route(async (req) => {
   const s = await requireRole(req, 'COMPANY');
   const company = await prisma.company.findUnique({
     where: { id: s.companyId! },
-    include: { photos: { select: { id: true, url: true } }, departments: true },
+    include: {
+      photos: { select: { id: true, url: true } },
+      departments: {
+        include: {
+          vacancies: { orderBy: { createdAt: 'desc' } },
+        },
+      },
+    },
   });
   return ok({ company });
 });
