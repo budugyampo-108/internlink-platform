@@ -7,6 +7,39 @@ import { api, ApiError } from '@/lib/client';
 type Mode = 'login' | 'register';
 type Errors = Record<string, string>;
 
+type FieldProps = {
+  id: string;
+  label: string;
+  type?: string;
+  hint?: string;
+  auto?: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  error?: string;
+  showPw?: boolean;
+};
+
+function Field({ id, label, type = 'text', hint, auto, value, onChange, error, showPw }: FieldProps) {
+  return (
+    <div className="field">
+      <label htmlFor={id}>{label}</label>
+      <input
+        id={id}
+        className="input"
+        type={type === 'password' && showPw ? 'text' : type}
+        value={value}
+        onChange={onChange}
+        autoComplete={auto}
+        aria-invalid={Boolean(error)}
+        aria-describedby={error ? `${id}-err` : hint ? `${id}-hint` : undefined}
+        inputMode={type === 'number' ? 'numeric' : undefined}
+      />
+      {hint && !error && <span id={`${id}-hint`} className="hint">{hint}</span>}
+      {error && <span id={`${id}-err`} className="field-error" role="alert">{error}</span>}
+    </div>
+  );
+}
+
 export function AuthForm({ mode }: { mode: Mode }) {
   const [role, setRole] = useState<Role>('STUDENT');
   const [values, setValues] = useState<Record<string, string>>({});
@@ -57,24 +90,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
     }
   }
 
-  const Field = ({ id, label, type = 'text', hint, auto }: { id: string; label: string; type?: string; hint?: string; auto?: string }) => (
-    <div className="field">
-      <label htmlFor={id}>{label}</label>
-      <input
-        id={id}
-        className="input"
-        type={type === 'password' && showPw ? 'text' : type}
-        value={values[id] ?? ''}
-        onChange={set(id)}
-        autoComplete={auto}
-        aria-invalid={Boolean(errors[id])}
-        aria-describedby={errors[id] ? `${id}-err` : hint ? `${id}-hint` : undefined}
-        inputMode={type === 'number' ? 'numeric' : undefined}
-      />
-      {hint && !errors[id] && <span id={`${id}-hint`} className="hint">{hint}</span>}
-      {errors[id] && <span id={`${id}-err`} className="field-error" role="alert">{errors[id]}</span>}
-    </div>
-  );
+  const fProps = (id: string) => ({ id, value: values[id] ?? '', onChange: set(id), error: errors[id] });
 
   return (
     <form onSubmit={submit} noValidate className="card" style={{ maxWidth: 520, margin: '2rem auto' }} aria-labelledby="auth-title">
@@ -96,10 +112,10 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
       {formError && <div className="alert error" role="alert" style={{ marginBottom: '1rem' }}>{formError}</div>}
 
-      {mode === 'register' && <Field id="fullName" label="Full name" auto="name" />}
-      <Field id="email" label="Email" type="email" auto="email" />
+      {mode === 'register' && <Field {...fProps('fullName')} label="Full name" auto="name" />}
+      <Field {...fProps('email')} label="Email" type="email" auto="email" />
       <div>
-        <Field id="password" label="Password" type="password" auto={mode === 'login' ? 'current-password' : 'new-password'} hint={mode === 'register' ? 'At least 10 characters, with letters and numbers' : undefined} />
+        <Field {...fProps('password')} label="Password" type="password" showPw={showPw} auto={mode === 'login' ? 'current-password' : 'new-password'} hint={mode === 'register' ? 'At least 10 characters, with letters and numbers' : undefined} />
         <button type="button" className="btn btn-ghost" onClick={() => setShowPw((s) => !s)} aria-pressed={showPw} style={{ marginTop: '-.5rem', marginBottom: '1rem' }}>
           {showPw ? 'Hide' : 'Show'} password
         </button>
@@ -107,16 +123,16 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
       {mode === 'register' && role === 'STUDENT' && (
         <>
-          <Field id="institution" label="Institution" />
-          <Field id="program" label="Program / major" />
-          <Field id="level" label="Level / year" type="number" hint="e.g. 300 or 400" />
+          <Field {...fProps('institution')} label="Institution" />
+          <Field {...fProps('program')} label="Program / major" />
+          <Field {...fProps('level')} label="Level / year" type="number" hint="e.g. 300 or 400" />
         </>
       )}
       {mode === 'register' && role === 'COMPANY' && (
         <>
-          <Field id="companyName" label="Company name" />
-          <Field id="industry" label="Industry sector" />
-          <Field id="jobTitle" label="Your job title" hint="e.g. HR Manager, Supervisor" />
+          <Field {...fProps('companyName')} label="Company name" />
+          <Field {...fProps('industry')} label="Industry sector" />
+          <Field {...fProps('jobTitle')} label="Your job title" hint="e.g. HR Manager, Supervisor" />
         </>
       )}
 
